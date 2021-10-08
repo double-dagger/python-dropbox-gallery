@@ -5,6 +5,7 @@ import os.path
 import flask
 import dropbox
 
+index_g = []
 
 class GalleryImage(object):
     d = None
@@ -63,7 +64,7 @@ class DropboxGallery(object):
                 gi = GalleryImage(entry, self)
                 parent.images.append(gi)
             elif isinstance(entry, dropbox.files.FileMetadata) and entry.name == 'title':
-                app.index_g.append(parent)
+                index_g.append(parent)
         parent.subfolders = sorted(parent.subfolders, key=lambda x: x.d.name)
         parent.images = sorted(parent.images, key=lambda x: x.d.name)
 
@@ -78,24 +79,16 @@ class DropboxGallery(object):
         return gallery
 
 
-class FlaskGallery(flask.Flask):
-    dg = None
-    index_g = []
-
-    def run(self, *args, **kwargs):
-        self.dg = DropboxGallery()
-        return super().run(*args, **kwargs)
-
-
-app = FlaskGallery(__name__)
+dg = DropboxGallery()
+app = flask.Flask(__name__)
 
 
 @app.route('/')
 def gallery_index():
     return flask.render_template(
         'index.html',
-        dg=app.dg,
-        index_g=app.index_g,
+        dg=dg,
+        index_g=index_g,
         menu='index',
     )
 
@@ -103,7 +96,7 @@ def gallery_index():
 def gallery_about():
     return flask.render_template(
         'about.html',
-        dg=app.dg,
+        dg=dg,
         menu='about',
     )
 
@@ -111,7 +104,7 @@ def gallery_about():
 def gallery_contact():
     return flask.render_template(
         'contact.html',
-        dg=app.dg,
+        dg=dg,
         menu='contact',
     )
 
@@ -119,8 +112,8 @@ def gallery_contact():
 def gallery_view(folder):
     return flask.render_template(
         'gallery.html',
-        dg=app.dg,
-        gallery=app.dg.get_gallery(folder),
+        dg=dg,
+        gallery=dg.get_gallery(folder),
         menu='gallery',
     )
 
@@ -128,8 +121,8 @@ def gallery_view(folder):
 def gallery_view_sub(folder, subfolder):
     return flask.render_template(
         'gallery.html',
-        dg=app.dg,
-        gallery=app.dg.get_gallery(folder, subfolder),
+        dg=dg,
+        gallery=dg.get_gallery(folder, subfolder),
         menu='gallery',
     )
 
