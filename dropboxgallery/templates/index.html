@@ -1,0 +1,22 @@
+{% extends "master.html" %}
+{% block content %}
+
+    <div class="container-fluid" data-aos="fade" data-aos-delay="500">
+      <div class="row">
+
+{% for g in index_g %}
+        <div class="col-lg-4">
+          <div class="image-wrap-2">
+            <div class="image-info">
+            <h2 class="mb-3">{{ g.name }}</h2>
+              <a href="{{ g.path }}" class="btn btn-outline-white py-2 px-4">More Photos</a>
+            </div>
+            <img src="{{ g.images[0].link }}&raw=1" alt="Image" class="img-fluid">
+          </div>
+        </div>
+{% endfor %}
+
+      </div>
+    </div>
+
+{% endblock %}
