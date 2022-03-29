@@ -10,7 +10,7 @@ import dropbox
 import dropboxgallery.gallery
 import dropboxgallery.log
 
-DROPBOX_TOKEN_PATH = '/opt/token'
+DROPBOX_APP_KEY_PATH = '/opt/appkey'
 DROPBOX_GALLERY_ROOT = ''
 PICKLE_PATH = '/opt/dg_pickle'
 
@@ -20,10 +20,16 @@ dropboxgallery.log.set_logging(log_level=logging.INFO)
 
 class DropboxGallery(object):
     DBX_TOKEN = ''
+    appkey = None
     pickle_sync = None
     g = None
+    auth_flow = None
+    auth_url = None
 
     def load_folder(self, folder_path, folder):
+        """ Retrieve particular folder from dropbox.
+            Is called recursively to load the whole gallery contents.
+        """
         index_g = []
         for entry in self.dbx.files_list_folder(folder_path).entries:
             if isinstance(entry, dropbox.files.FolderMetadata):
@@ -42,19 +48,54 @@ class DropboxGallery(object):
             folder.index_g += subfolder.index_g
         logger.debug('{0.name} index_g: {0.index_g}'.format(folder))
 
+    def sync_dropbox_to_pickle_start(self):
+        """ Init dropbox sync. Init auth_flow and create url for dropbox verification
+        """
+        with open(DROPBOX_APP_KEY_PATH, 'r') as dbx_appkey_file:
+            self.appkey = dbx_appkey_file.read().strip()
+
+        self.auth_flow = dropbox.DropboxOAuth2FlowNoRedirect(
+            self.appkey,
+            use_pkce=True,
+            token_access_type='offline'
+        )
+        self.auth_url = self.auth_flow.start()
+
+    def sync_dropbox_to_pickle_finish(self, auth_code):
+        """ Finish dropbox sync. Tak provided auth_code and try to use it for verification.
+            Run the real sync if verified.
+        """
+        logger.debug('sync_dropbox_to_pickle_finish auth_code: {0}'.format(auth_code))
+        try:
+            oauth_result = self.auth_flow.finish(auth_code)
+        except Exception as e:
+            logger.error('OAuth Error: {0}'.format(e))
+            return e
+
+        self.dbx = dropbox.Dropbox(
+            oauth2_refresh_token=oauth_result.refresh_token,
+            app_key=self.appkey,
+        )
+
+        self.sync_dropbox_to_pickle()
+
     def sync_dropbox_to_pickle(self):
-        with open(DROPBOX_TOKEN_PATH, 'r') as dbx_token_file:
-            self.DBX_TOKEN = dbx_token_file.read().strip()
-            self.dbx = dropbox.Dropbox(self.DBX_TOKEN)
+        """ Synchronization process itself. Read data from dropbox and store them to pickle.
+        """
         g = dropboxgallery.gallery.GalleryFolder(None)
         self.load_folder(DROPBOX_GALLERY_ROOT, g)
         with open(PICKLE_PATH, 'wb') as pickle_file:
             pickle.dump(g, pickle_file, pickle.HIGHEST_PROTOCOL)
 
     def get_pickle_mod(self):
+        """ Get last pickle modification date
+        """
         return os.path.getmtime(PICKLE_PATH)
 
     def sync_content_from_pickle(self):
+        """ Sync gallery content from pickle.
+            Only if not up-to-date
+        """
         if not os.path.exists(PICKLE_PATH):
             logger.warning('No pickle file')
             return
@@ -69,11 +110,15 @@ class DropboxGallery(object):
         self.load_content_from_pickle()
 
     def load_content_from_pickle(self):
+        """ Load gallery content from pickle file.
+        """
         with open(PICKLE_PATH, 'rb') as pickle_file:
             self.g = pickle.load(pickle_file)
         self.pickle_sync = self.get_pickle_mod()
 
     def get_gallery(self, folder, subfolder=None):
+        """ Get particular gallery for web display.
+        """
         gallery = next(filter(lambda g: g.name == folder, self.g.subfolders), None)
         if subfolder and gallery:
             gallery = next(filter(lambda g: g.name == subfolder, gallery.subfolders), None)
@@ -133,11 +178,22 @@ def gallery_view_sub(folder, subfolder):
 
 @app.route('/request/gallery/sync')
 def gallery_sync():
-    dg.sync_dropbox_to_pickle()
+    dg.sync_dropbox_to_pickle_start()
     return flask.render_template(
-        'contact.html',
+        'sync.html',
         dg=dg,
-        menu='contact',
+        menu='',
+    )
+
+@app.route('/request/gallery/sync/finish', methods=['POST'])
+def gallery_sync_finish():
+    auth_code = flask.request.form.get('auth_code')
+    error = dg.sync_dropbox_to_pickle_finish(auth_code)
+    return flask.render_template(
+        'sync_done.html',
+        dg=dg,
+        error=error,
+        menu='',
     )
 
 if __name__ == '__main__':

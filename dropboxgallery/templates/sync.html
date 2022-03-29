@@ -1,0 +1,50 @@
+{% extends "master.html" %}
+{% block content %}
+
+    <div class="site-section"  data-aos="fade">
+      <div class="container">
+
+        <div class="row justify-content-center">
+
+          <div class="col-md-7">
+            <div class="row mb-5">
+              <div class="col-12 ">
+                <h2 class="site-section-heading text-center">Sync</h2>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        
+        <div class="row">
+          <div class="col-lg-8 mb-5">
+            <p>Ahoj, tady si můžeš aktualizovat fotogalerii.</p>
+            <p>Stačí kliknout na následující odkaz, potvrdit a až se objeví kód, tak jej vložit do kolonky níže.</p>
+            <p id="auth_url"> Toto otevři a potvrď <a href="{{ dg.auth_url }}" target="_blank" rel="noopener">{{ dg.auth_url }}</a></p>
+            <p>
+              A následně vlož vygenerovaný kód sem:
+              <form id="auth_form" action="/request/gallery/sync/finish" method="post">
+                <label for="auth_code">Access Code:</label>
+                <input type="text" id="auth_code" name="auth_code" />
+                <input type="submit" id="auth_submit" value="Submit" />
+              </form>
+            </p>
+          </div>
+
+          <div class="col-lg-3 ml-auto">
+            <div class="mb-3">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  <script type="text/javascript" defer>
+    window.addEventListener("load", function(){
+      $("#auth_submit").click(function(){
+        $("#auth_url").hide();
+        $("#auth_form").hide();
+      });
+    });
+  </script>
+{% endblock %}

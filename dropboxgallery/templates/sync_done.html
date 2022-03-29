@@ -1,0 +1,40 @@
+{% extends "master.html" %}
+{% block content %}
+
+    <div class="site-section"  data-aos="fade">
+      <div class="container">
+
+        <div class="row justify-content-center">
+
+          <div class="col-md-7">
+            <div class="row mb-5">
+              <div class="col-12 ">
+                <h2 class="site-section-heading text-center">Sync ...</h2>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        
+        <div class="row">
+          <div class="col-lg-8 mb-5">
+
+            {% if error %}
+            <div class="alert alert-danger">
+              <strong>Failed!</strong> <br /> <br /> <code>{{ error }}</code>.
+            </div>
+            {% else %}
+            <div class="alert alert-success">
+              <strong>Success!</strong> galleries synced.
+            </div>
+            {% endif %}
+
+          <div class="col-lg-3 ml-auto">
+            <div class="mb-3">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+{% endblock %}
