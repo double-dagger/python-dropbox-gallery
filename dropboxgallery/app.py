@@ -156,6 +156,15 @@ def gallery_contact():
         menu='contact',
     )
 
+@app.route('/video')
+def gallery_video():
+    dg.sync_content_from_pickle()
+    return flask.render_template(
+        'video.html',
+        dg=dg,
+        menu='video',
+    )
+
 @app.route('/gallery/<folder>')
 def gallery_view(folder):
     dg.sync_content_from_pickle()
